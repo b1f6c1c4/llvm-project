@@ -160,6 +160,14 @@ def HasStdExtV : Predicate<"Subtarget->hasStdExtV()">,
 def HasVInstructions    : Predicate<"Subtarget->hasVInstructions()">;
 def HasVInstructionsAnyF : Predicate<"Subtarget->hasVInstructionsAnyF()">;
 
+def FeatureStdExtZvmagic
+    : SubtargetFeature<"experimental-zvmagic", "HasStdExtZvmagic", "true",
+                       "'Zvmagic' (Vector Magic Instructions)",
+                       [FeatureStdExtV]>;
+def HasStdExtZvmagic : Predicate<"Subtarget->hasStdExtZvmagic()">,
+                                 AssemblerPredicate<(all_of FeatureStdExtZvmagic),
+                                 "'Zvmagic' (Vector Magic Instructions)">;
+
 def FeatureStdExtZvlsseg
     : SubtargetFeature<"experimental-zvlsseg", "HasStdExtZvlsseg", "true",
                        "'Zvlsseg' (Vector segment load/store instructions)",
@@ -292,6 +300,19 @@ def : ProcessorModel<"sifive-u74", SiFive7Model, [Feature64Bit,
                                                   FeatureStdExtF,
                                                   FeatureStdExtD,
                                                   FeatureStdExtC]>;
+
+def : ProcessorModel<"cva6", NoSchedModel, [Feature64Bit,
+                                            FeatureStdExtM,
+                                            FeatureStdExtA,
+                                            FeatureStdExtF,
+                                            FeatureStdExtC]>;
+
+def : ProcessorModel<"cva6-v", NoSchedModel, [Feature64Bit,
+                                              FeatureStdExtM,
+                                              FeatureStdExtA,
+                                              FeatureStdExtF,
+                                              FeatureStdExtC,
+                                              FeatureStdExtV]>;
 
 //===----------------------------------------------------------------------===//
 // Define the RISC-V target.
