@@ -70,17 +70,29 @@ public:
 
 private:
   void emitAttributes();
+  void emitToStreamer(MCStreamer &S, const MCInst &Inst);
 };
 }
 
 #define GEN_COMPRESS_INSTR
 #include "RISCVGenCompressInstEmitter.inc"
-void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
+void RISCVAsmPrinter::emitToStreamer(MCStreamer &S, const MCInst &Inst) {
   MCInst CInst;
   bool Res = compressInst(CInst, Inst, *STI, OutStreamer->getContext());
   if (Res)
     ++RISCVNumInstrsCompressed;
   AsmPrinter::EmitToStreamer(*OutStreamer, Res ? CInst : Inst);
+}
+
+void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
+  if (!STI->getFeatureBits()[RISCV::FeatureStdExtZvmagic]) {
+    emitToStreamer(S, Inst);
+    return;
+  }
+  std::vector<MCInst> Insts;
+  // TODO
+  for (MCInst &TmpInst : Insts)
+    emitToStreamer(S, TmpInst);
 }
 
 // Simple pseudo-instructions have their lowering (with expansion to real
