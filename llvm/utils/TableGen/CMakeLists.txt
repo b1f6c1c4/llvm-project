@@ -41,6 +41,7 @@ add_tablegen(llvm-tblgen LLVM
   PredicateExpander.cpp
   PseudoLoweringEmitter.cpp
   CompressInstEmitter.cpp
+  RISCVVectorMagicEmitter.cpp
   RegisterBankEmitter.cpp
   RegisterInfoEmitter.cpp
   SDNodeProperties.cpp
