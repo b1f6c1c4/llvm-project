@@ -339,6 +339,14 @@ def HasVInstructionsAnyF : Predicate<"Subtarget->hasVInstructionsAnyF()">,
           "'V' (Vector Extension for Application Processors), 'Zve32f', "
           "'Zve64f' or 'Zve64d' (Vector Extensions for Embedded Processors)">;
 
+def FeatureStdExtZvmagic
+    : SubtargetFeature<"experimental-zvmagic", "HasStdExtZvmagic", "true",
+                       "'Zvmagic' (Vector Magic Instructions)",
+                       [FeatureStdExtV]>;
+def HasStdExtZvmagic : Predicate<"Subtarget->hasStdExtZvmagic()">,
+                                 AssemblerPredicate<(all_of FeatureStdExtZvmagic),
+                                 "'Zvmagic' (Vector Magic Instructions)">;
+
 def Feature64Bit
     : SubtargetFeature<"64bit", "HasRV64", "true", "Implements RV64">;
 def IsRV64 : Predicate<"Subtarget->is64Bit()">,
@@ -471,6 +479,12 @@ def : ProcessorModel<"sifive-u74", SiFive7Model, [Feature64Bit,
                                                   FeatureStdExtD,
                                                   FeatureStdExtC],
                      [TuneSiFive7]>;
+
+def : ProcessorModel<"cva6", NoSchedModel, [Feature64Bit,
+                                            FeatureStdExtM,
+                                            FeatureStdExtA,
+                                            FeatureStdExtF,
+                                            FeatureStdExtC]>;
 
 //===----------------------------------------------------------------------===//
 // Define the RISC-V target.
