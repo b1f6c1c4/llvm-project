@@ -162,4 +162,4 @@
 
 // RUN: not %clang_cc1 -triple riscv64 -target-cpu not-a-cpu -fsyntax-only %s 2>&1 | FileCheck %s --check-prefix RISCV64
 // RISCV64: error: unknown target CPU 'not-a-cpu'
-// RISCV64: note: valid target CPU values are: generic-rv64, rocket-rv64, sifive-u54
+// RISCV64: note: valid target CPU values are: generic-rv64, rocket-rv64, sifive-u54, cva6, cva6-v
