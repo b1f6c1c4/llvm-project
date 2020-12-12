@@ -24,7 +24,9 @@
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCCodeEmitter.h"
 #include "llvm/MC/MCInst.h"
+#include "llvm/MC/MCInstBuilder.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -43,7 +45,18 @@ class RISCVAsmPrinter : public AsmPrinter {
 public:
   explicit RISCVAsmPrinter(TargetMachine &TM,
                            std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)), STI(TM.getMCSubtargetInfo()) {}
+      : AsmPrinter(TM, std::move(Streamer)), STI(TM.getMCSubtargetInfo()),
+        MagicEmitter(nullptr) {
+    if (STI->getFeatureBits()[RISCV::FeatureStdExtZvmagic])
+      MagicEmitter = createRISCVMCCodeEmitter(*TM.getMCInstrInfo(),
+                                              *TM.getMCRegisterInfo(),
+                                              OutStreamer->getContext());
+  }
+
+  ~RISCVAsmPrinter() {
+    if (MagicEmitter)
+      delete MagicEmitter;
+  }
 
   StringRef getPassName() const override { return "RISCV Assembly Printer"; }
 
@@ -71,6 +84,9 @@ public:
 private:
   void emitAttributes();
   void emitToStreamer(MCStreamer &S, const MCInst &Inst);
+
+  // For Zvmagic
+  MCCodeEmitter *MagicEmitter;
 };
 }
 
@@ -84,13 +100,41 @@ void RISCVAsmPrinter::emitToStreamer(MCStreamer &S, const MCInst &Inst) {
   AsmPrinter::EmitToStreamer(*OutStreamer, Res ? CInst : Inst);
 }
 
+#define GEN_VECTOR_MAGIC
+#include "RISCVGenVectorMagicEmitter.inc"
 void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
-  if (!STI->getFeatureBits()[RISCV::FeatureStdExtZvmagic]) {
+  unsigned Rs2, Rs1, Rd;
+  if (!MagicEmitter || !matchVectorMagic(Inst, Rs2, Rs1, Rd)) {
     emitToStreamer(S, Inst);
     return;
   }
+
+  std::string Str;
+  raw_string_ostream TmpOS{ Str };
+  SmallVector<MCFixup> Fixups;
+  MagicEmitter->encodeInstruction(Inst, TmpOS, Fixups, *STI);
+  assert(Str.size() == 4 && "MCInst size expected to be 32 bits");
+
   std::vector<MCInst> Insts;
-  // TODO
+  Insts.push_back(Inst); // TODO
+
+  Insts.push_back(MCInstBuilder(RISCV::SD)
+      .addReg(Rs2)
+      .addReg(RISCV::X0)
+      .addImm((Str[0] << 3) - 0x800));
+  Insts.push_back(MCInstBuilder(RISCV::SD)
+      .addReg(Rs1)
+      .addReg(RISCV::X0)
+      .addImm((Str[1] << 3) - 0x800));
+  Insts.push_back(MCInstBuilder(RISCV::SD)
+      .addReg(Rd)
+      .addReg(RISCV::X0)
+      .addImm((Str[2] << 3) - 0x800));
+  Insts.push_back(MCInstBuilder(RISCV::LD)
+      .addReg(Rd)
+      .addReg(RISCV::X0)
+      .addImm((Str[3] << 3) - 0x800));
+
   for (MCInst &TmpInst : Insts)
     emitToStreamer(S, TmpInst);
 }
