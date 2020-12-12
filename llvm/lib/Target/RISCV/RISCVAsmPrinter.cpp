@@ -115,28 +115,22 @@ void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
   MagicEmitter->encodeInstruction(Inst, TmpOS, Fixups, *STI);
   assert(Str.size() == 4 && "MCInst size expected to be 32 bits");
 
-  std::vector<MCInst> Insts;
-  Insts.push_back(Inst); // TODO
-
-  Insts.push_back(MCInstBuilder(RISCV::SD)
-      .addReg(Rs2)
-      .addReg(RISCV::X0)
-      .addImm((Str[0] << 3) - 0x800));
-  Insts.push_back(MCInstBuilder(RISCV::SD)
-      .addReg(Rs1)
-      .addReg(RISCV::X0)
-      .addImm((Str[1] << 3) - 0x800));
-  Insts.push_back(MCInstBuilder(RISCV::SD)
-      .addReg(Rd)
-      .addReg(RISCV::X0)
-      .addImm((Str[2] << 3) - 0x800));
-  Insts.push_back(MCInstBuilder(RISCV::LD)
-      .addReg(Rd)
-      .addReg(RISCV::X0)
-      .addImm((Str[3] << 3) - 0x800));
-
-  for (MCInst &TmpInst : Insts)
-    emitToStreamer(S, TmpInst);
+  emitToStreamer(S, MCInstBuilder(RISCV::SD)
+                    .addReg(Rs2)
+                    .addReg(RISCV::X0)
+                    .addImm((Str[0] << 3) - 0x800));
+  emitToStreamer(S, MCInstBuilder(RISCV::SD)
+                    .addReg(Rs1)
+                    .addReg(RISCV::X0)
+                    .addImm((Str[1] << 3) - 0x800));
+  emitToStreamer(S, MCInstBuilder(RISCV::SD)
+                    .addReg(Rd)
+                    .addReg(RISCV::X0)
+                    .addImm((Str[2] << 3) - 0x800));
+  emitToStreamer(S, MCInstBuilder(RISCV::LD)
+                    .addReg(Rd)
+                    .addReg(RISCV::X0)
+                    .addImm((Str[3] << 3) - 0x800));
 }
 
 // Simple pseudo-instructions have their lowering (with expansion to real
