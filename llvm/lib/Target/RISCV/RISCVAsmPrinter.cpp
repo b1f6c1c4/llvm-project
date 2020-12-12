@@ -100,6 +100,10 @@ void RISCVAsmPrinter::emitToStreamer(MCStreamer &S, const MCInst &Inst) {
   AsmPrinter::EmitToStreamer(*OutStreamer, Res ? CInst : Inst);
 }
 
+static int prepareByte(unsigned char V) {
+  return (V << 3u) - 0x800;
+}
+
 #define GEN_VECTOR_MAGIC
 #include "RISCVGenVectorMagicEmitter.inc"
 void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
@@ -118,19 +122,19 @@ void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
   emitToStreamer(S, MCInstBuilder(RISCV::SD)
                     .addReg(Rs2)
                     .addReg(RISCV::X0)
-                    .addImm((Str[0] << 3) - 0x800));
+                    .addImm(prepareByte(Str[0])));
   emitToStreamer(S, MCInstBuilder(RISCV::SD)
                     .addReg(Rs1)
                     .addReg(RISCV::X0)
-                    .addImm((Str[1] << 3) - 0x800));
+                    .addImm(prepareByte(Str[1])));
   emitToStreamer(S, MCInstBuilder(RISCV::SD)
                     .addReg(Rd)
                     .addReg(RISCV::X0)
-                    .addImm((Str[2] << 3) - 0x800));
+                    .addImm(prepareByte(Str[2])));
   emitToStreamer(S, MCInstBuilder(RISCV::LD)
                     .addReg(Rd)
                     .addReg(RISCV::X0)
-                    .addImm((Str[3] << 3) - 0x800));
+                    .addImm(prepareByte(Str[3])));
 }
 
 // Simple pseudo-instructions have their lowering (with expansion to real
