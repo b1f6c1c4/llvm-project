@@ -38,6 +38,9 @@ using namespace llvm;
 STATISTIC(RISCVNumInstrsCompressed,
           "Number of RISC-V Compressed instructions emitted");
 
+STATISTIC(RISCVNumMagicInstrs,
+          "Number of RISC-V Vector MAGIC instruction groups emitted");
+
 namespace {
 class RISCVAsmPrinter : public AsmPrinter {
   const MCSubtargetInfo *STI;
@@ -119,6 +122,7 @@ void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
   MagicEmitter->encodeInstruction(Inst, TmpOS, Fixups, *STI);
   assert(Str.size() == 4 && "MCInst size expected to be 32 bits");
 
+  ++RISCVNumMagicInstrs;
   emitToStreamer(S, MCInstBuilder(RISCV::SD)
                     .addReg(Rs2)
                     .addReg(RISCV::X0)
