@@ -1439,7 +1439,7 @@ multiclass vsetvl {
                     "e16mf4", "e16mf2", "e16m1", "e16m2", "e16m4", "e16m8",
                     "e32mf2", "e32m1", "e32m2", "e32m4", "e32m8",
                     "e64m1", "e64m2", "e64m4", "e64m8"] in {
-    def NAME#suffix : Inst<"vsetvl", ["z", "z", "z"], "", suffix, 0, [-1]>;
+    def NAME#suffix : Inst<"vsetvl", ["z", "z", "z", "z"], "", suffix, 0, [-1]>;
   }
 }
 defm : vsetvl;

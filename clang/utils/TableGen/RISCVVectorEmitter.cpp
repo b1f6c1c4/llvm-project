@@ -371,7 +371,7 @@ void RISCVVectorEmitter::createHeader(raw_ostream &OS) {
       eiter = SEW.find(Sew);
       miter = LMUL.find(Lmul);
       if (eiter != SEW.end() && miter != LMUL.end())
-        OS << eiter->second << "/*" << eiter->first << "*/ | " << miter->second << "/*" <<miter->first<< "*/)\n";
+        OS << eiter->second << "/*" << eiter->first << "*/, " << miter->second << "/*" <<miter->first<< "*/)\n";
 
       // vsetvlmax
       OS << "#define ";
@@ -511,7 +511,7 @@ void RISCVVectorEmitter::createBuiltins(raw_ostream &OS) {
       createIntrinsic(R, Defs);
   }
 
-  OS << "BUILTIN(__builtin_riscv_vsetvl, \"zzz\", \"n\")\n";
+  OS << "BUILTIN(__builtin_riscv_vsetvl, \"zzzz\", \"n\")\n";
 
   for (auto def : Defs) {
     if (def->isVsetvl()) {
@@ -575,6 +575,8 @@ std::string Intrinsic::createStatementInCase() {
     }
     // delete unnecessay ", "
     result = result.substr(0, result.size() - 2);
+  } else {
+    result += "Ops[0]->getType(), Ops[1]->getType(), Ops[2]->getType()";
   }
   result += "});\n";
   result += "return Builder.CreateCall(F, Ops);\n";
