@@ -40,6 +40,7 @@
 #include "llvm/IR/IntrinsicsNVPTX.h"
 #include "llvm/IR/IntrinsicsPowerPC.h"
 #include "llvm/IR/IntrinsicsR600.h"
+#include "llvm/IR/IntrinsicsRISCV.h"
 #include "llvm/IR/IntrinsicsS390.h"
 #include "llvm/IR/IntrinsicsWebAssembly.h"
 #include "llvm/IR/IntrinsicsX86.h"
@@ -5125,6 +5126,9 @@ static Value *EmitTargetArchBuiltinExpr(CodeGenFunction *CGF,
   case llvm::Triple::ppc64:
   case llvm::Triple::ppc64le:
     return CGF->EmitPPCBuiltinExpr(BuiltinID, E);
+  case llvm::Triple::riscv32:
+  case llvm::Triple::riscv64:
+    return CGF->EmitRISCVBuiltinExpr(BuiltinID, E);
   case llvm::Triple::r600:
   case llvm::Triple::amdgcn:
     return CGF->EmitAMDGPUBuiltinExpr(BuiltinID, E);
@@ -8642,6 +8646,10 @@ Value *CodeGenFunction::EmitSVEReinterpret(Value *Val, llvm::Type *Ty) {
   // view (when storing/reloading), whereas the svreinterpret builtin
   // implements bitwise equivalent cast from register point of view.
   // LLVM CodeGen for a bitcast must add an explicit REV for big-endian.
+  return Builder.CreateBitCast(Val, Ty);
+}
+
+Value *CodeGenFunction::EmitRISCVReinterpret(Value *Val, llvm::Type *Ty) {
   return Builder.CreateBitCast(Val, Ty);
 }
 
@@ -15479,6 +15487,39 @@ Value *CodeGenFunction::EmitAMDGPUBuiltinExpr(unsigned BuiltinID,
     return nullptr;
   }
 }
+
+Value *CodeGenFunction::EmitRISCVBuiltinExpr(unsigned BuiltinID,
+                                             const CallExpr *E) {
+
+  SmallVector<Value*, 4> Ops;
+  llvm::Type* ResultType = ConvertType(E->getType());
+  for (unsigned i = 0, e = E->getNumArgs(); i != e; i++) {
+    // Handle fp16
+    if (const BuiltinType *BTy = dyn_cast<BuiltinType>(E->getArg(i)->getType())) {
+      if (BTy->getKind() == BuiltinType::Half) {
+        Ops.push_back(EmitScalarExpr(E->getArg(i)->IgnoreImplicit()));
+        continue;
+      }
+    }
+    Ops.push_back(EmitScalarExpr(E->getArg(i)));
+  }
+
+  if (BuiltinID >= RISCV::BI__builtin_riscv_vreinterpret_v_f16m1_i16m1 && 
+      BuiltinID <= RISCV::BI__builtin_riscv_vreinterpret_v_u8mf8_i8mf8) {
+    return EmitRISCVReinterpret(Ops[0], ResultType);
+    
+  }
+ 
+  switch (BuiltinID) {
+    #define GEN_RISCV_VECTOR_BUILTIN_CG
+    #include "clang/Basic/riscv_vector_builtin_cg.inc"
+    #undef GEN_RISCV_VECTOR_BUILTIN_CG
+    default:
+      return nullptr;
+  }
+
+}
+
 
 /// Handle a SystemZ function in which the final argument is a pointer
 /// to an int that receives the post-instruction CC value.  At the LLVM level

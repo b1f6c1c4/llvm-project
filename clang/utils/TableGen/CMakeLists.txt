@@ -18,6 +18,7 @@ add_tablegen(clang-tblgen CLANG
   ClangTypeNodesEmitter.cpp
   MveEmitter.cpp
   NeonEmitter.cpp
+  RISCVVectorEmitter.cpp
   SveEmitter.cpp
   TableGen.cpp
   )

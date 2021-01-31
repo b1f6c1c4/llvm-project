@@ -301,6 +301,8 @@ def warn_riscv_repeated_interrupt_attribute : Warning<
   "repeated RISC-V 'interrupt' attribute">, InGroup<IgnoredAttributes>;
 def note_riscv_repeated_interrupt_attribute : Note<
   "repeated RISC-V 'interrupt' attribute is here">;
+def err_riscv_Segment_LoadStore_constraint : Error<
+  "Segment_LoadStore_constraint EMUL * NFIELDS ≤ 8">;
 def warn_unused_parameter : Warning<"unused parameter %0">,
   InGroup<UnusedParameter>, DefaultIgnore;
 def warn_unused_variable : Warning<"unused variable %0">,

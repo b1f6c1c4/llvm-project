@@ -3235,7 +3235,13 @@ public:
     SveFixedLengthDataVector,
 
     /// is AArch64 SVE fixed-length predicate vector
-    SveFixedLengthPredicateVector
+    SveFixedLengthPredicateVector,
+
+    /// is RISCV Vector
+    RISCVVector,
+
+    /// is RISCV fixed length vector
+    RISCVFiexedLengthVector
   };
 
 protected:

@@ -14,9 +14,21 @@
 #include "clang/Basic/MacroBuilder.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/Support/TargetParser.h"
+#include "clang/Basic/TargetBuiltins.h"
 
 using namespace clang;
 using namespace clang::targets;
+
+const Builtin::Info RISCVTargetInfo::BuiltinInfo[] = {
+#define BUILTIN(ID, TYPE, ATTRS)                                               \
+  {#ID, TYPE, ATTRS, nullptr, ALL_LANGUAGES, nullptr},
+#include "clang/Basic/BuiltinsRISCV.def"
+};
+
+ArrayRef<Builtin::Info> RISCVTargetInfo::getTargetBuiltins() const {
+  return llvm::makeArrayRef(BuiltinInfo, clang::RISCV::LastTSBuiltin -
+                                             Builtin::FirstTSBuiltin);
+}
 
 ArrayRef<const char *> RISCVTargetInfo::getGCCRegNames() const {
   static const char *const GCCRegNames[] = {
@@ -244,8 +256,11 @@ bool RISCVTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
       HasC = true;
     else if (Feature == "+experimental-b")
       HasB = true;
-    else if (Feature == "+experimental-v")
+    else if (Feature == "+experimental-v") {
       HasV = true;
+      HasLegalHalfType = true;
+      HasFloat16 = true;
+    }
     else if (Feature == "+experimental-zba")
       HasZba = true;
     else if (Feature == "+experimental-zbb")

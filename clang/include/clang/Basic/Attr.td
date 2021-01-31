@@ -643,6 +643,13 @@ def ArmBuiltinAlias : InheritableAttr, TargetSpecificAttr<TargetAnyArm> {
   let Documentation = [ArmBuiltinAliasDocs];
 }
 
+def RiscvVectorBuiltinAlias : InheritableAttr, TargetSpecificAttr<TargetRISCV> {
+  let Spellings = [Clang<"__clang_riscv_vector_builtin_alias">];
+  let Args = [IdentifierArgument<"BuiltinName">];
+  let Subjects = SubjectList<[Function], ErrorDiag>;
+  let Documentation = [Undocumented];
+}
+
 def Aligned : InheritableAttr {
   let Spellings = [GCC<"aligned">, Declspec<"align">, Keyword<"alignas">,
                    Keyword<"_Alignas">];
@@ -2657,6 +2664,30 @@ def VectorSize : TypeAttr {
   let Documentation = [Undocumented];
   // Represented as VectorType instead.
   let ASTNode = 0;
+}
+
+def RISCVVectorType : TypeAttr {
+  let Spellings = [GNU<"riscv_vector_type">];
+  let Args = [IntArgument<"ELEN">,
+              IntArgument<"LMUL">,
+              IntArgument<"IsLMULFractional">,/*1 for true and 0 for false*/
+              IntArgument<"NF"> /*specifies the number of fields in each segment, for segment load/stores*/];
+  let Documentation = [Undocumented];
+  let ASTNode = 0;
+}
+
+def RISCVMaskType : TypeAttr {
+  let Spellings = [GNU<"riscv_mask_type">];
+  let Args = [IntArgument<"MLEN">];
+  let Documentation = [Undocumented];
+  let ASTNode = 0;
+}
+
+def RISCVVectorBits : TypeAttr {
+  let Spellings = [GNU<"riscv_vector_bits">];
+  let Subjects = SubjectList<[TypedefName], ErrorDiag>;
+  let Args = [IntArgument<"NumBits">];
+  let Documentation = [Undocumented];
 }
 
 def VecTypeHint : InheritableAttr {

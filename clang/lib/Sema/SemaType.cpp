@@ -7875,6 +7875,192 @@ static void HandleArmMveStrictPolymorphismAttr(TypeProcessingState &State,
                               CurType, CurType);
 }
 
+static void HandleRISCVVectorTypeAttr(QualType &CurType, const ParsedAttr &Attr,
+                                      Sema &S) {
+  if (Attr.getNumArgs() != 4) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_wrong_number_arguments)
+           << Attr << 4;
+    Attr.setInvalid();
+    return;
+  }
+
+  Expr *ELENExpr = static_cast<Expr *>(Attr.getArgAsExpr(0));
+  llvm::APSInt ELENInt(32);
+//  if(!(isa<IntegerLiteral>(ELENExpr))) {
+  if (!ELENExpr->isIntegerConstantExpr(S.Context)) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_argument_type)
+        << Attr << AANT_ArgumentIntegerConstant << ELENExpr->getSourceRange();
+    Attr.setInvalid();
+    return;
+  }
+ // unsigned ELEN = static_cast<unsigned>(ELENInt.getZExtValue());
+   unsigned ELEN = cast<IntegerLiteral>(ELENExpr)->getValue().getZExtValue();
+  
+  Expr *LMULExpr = static_cast<Expr *>(Attr.getArgAsExpr(1));
+  llvm::APSInt LMULInt(32);
+  if (!LMULExpr->isIntegerConstantExpr(S.Context)) {
+ // if(!(isa<IntegerLiteral>(LMULExpr))) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_argument_type)
+          << Attr << AANT_ArgumentIntegerConstant << LMULExpr->getSourceRange();
+    Attr.setInvalid();
+    return;
+  }
+
+  //unsigned LMUL = static_cast<unsigned>(LMULInt.getZExtValue());
+  unsigned LMUL = cast<IntegerLiteral>(LMULExpr)->getValue().getZExtValue();
+
+  Expr* FractExpr = static_cast<Expr*>(Attr.getArgAsExpr(2));
+  llvm::APSInt FractInt(32);
+
+  if (!FractExpr->isIntegerConstantExpr(S.Context)) {
+//  if(!(isa<IntegerLiteral>(FractExpr))) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_argument_type)
+        << Attr << AANT_ArgumentIntegerConstant << FractExpr->getSourceRange();
+    Attr.setInvalid();
+  }
+  //bool IsFract = static_cast<bool>(FractInt.getZExtValue());
+  bool IsFract = static_cast<bool>(cast<IntegerLiteral>(FractExpr)->getValue().getZExtValue());
+
+  const BuiltinType *BTy = CurType->getAs<BuiltinType>();
+  if (BTy->isFloatingType()) {
+    switch (ELEN) {
+    case 64:
+      CurType = S.Context.DoubleTy;
+      break;
+    case 32:
+      CurType = S.Context.FloatTy;
+      break;
+    case 16:
+      CurType = S.Context.Float16Ty;
+      break;
+    default:
+        S.Diag(Attr.getLoc(), diag::err_attribute_invalid_size)
+            << Attr << ELENExpr->getSourceRange();
+        Attr.setInvalid();
+        return;
+    }
+  } else if (BTy->isSignedInteger()) {
+    switch (ELEN) {
+    case 64:
+      CurType = S.Context.LongLongTy;
+      break;
+    case 32:
+      CurType = S.Context.IntTy;
+      break;
+    case 16:
+      CurType = S.Context.ShortTy;
+      break;
+    case 8:
+      CurType = S.Context.SignedCharTy;
+      break;
+    default:
+        S.Diag(Attr.getLoc(), diag::err_attribute_invalid_size)
+            << Attr << ELENExpr->getSourceRange();
+        Attr.setInvalid();
+        return;
+    }
+  } else if (BTy->isUnsignedInteger()) {
+    switch (ELEN) {
+    case 64:
+      CurType = S.Context.UnsignedLongLongTy;
+      break;
+    case 32:
+      CurType = S.Context.UnsignedIntTy;
+      break;
+    case 16:
+      CurType = S.Context.UnsignedShortTy;
+      break;
+    case 8:
+      CurType = S.Context.UnsignedCharTy;
+      break;
+    default:
+        S.Diag(Attr.getLoc(), diag::err_attribute_invalid_size)
+            << Attr << ELENExpr->getSourceRange();
+        Attr.setInvalid();
+        return;
+    }
+  } else {
+      S.Diag(Attr.getLoc(), diag::err_attribute_wrong_decl_type)
+        << Attr << ELENExpr->getSourceRange();
+    Attr.setInvalid();
+    return;
+  }
+
+  Expr* NFExpr = static_cast<Expr*>(Attr.getArgAsExpr(3));
+
+  if (!NFExpr->isIntegerConstantExpr(S.Context)) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_argument_type)
+        << Attr << AANT_ArgumentIntegerConstant << NFExpr->getSourceRange();
+    Attr.setInvalid();
+  }
+
+  unsigned NF = cast<IntegerLiteral>(NFExpr)->getValue().getZExtValue();
+
+  if (NF == 1) {
+    // Date types
+    if (IsFract) {
+      CurType = S.Context.getVectorType(CurType, 64 / (ELEN * LMUL),
+       VectorType::RISCVVector);
+    } else {
+      CurType = S.Context.getVectorType(CurType, (LMUL << 6) / ELEN, VectorType::RISCVVector);
+    }
+  } else {
+    // Types for Segment Load/Store
+    if (IsFract) {
+      if (1 / LMUL * NF <= 8)
+        CurType = S.Context.getVectorType(CurType, 64 / (ELEN * LMUL) * NF , VectorType::RISCVVector);
+      else 
+        S.Diag(Attr.getLoc(), diag::err_riscv_Segment_LoadStore_constraint)
+            << Attr << NFExpr->getSourceRange();
+    } else {
+      if (LMUL * NF <= 8)
+        CurType = S.Context.getVectorType(CurType, (LMUL << 6) / ELEN * NF , VectorType::RISCVVector);
+      else 
+        S.Diag(Attr.getLoc(), diag::err_riscv_Segment_LoadStore_constraint)
+            << Attr << NFExpr->getSourceRange();
+    }
+  }
+}
+
+static void HandleRISCVMaskTypeAttr(QualType &CurType, const ParsedAttr &Attr,
+                                    Sema &S) {
+  if (Attr.getNumArgs() != 1) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_wrong_number_arguments) << Attr;
+    Attr.setInvalid();
+    return;
+  }
+
+  Expr *MLENExpr = static_cast<Expr *>(Attr.getArgAsExpr(0));
+  llvm::APSInt MLENInt(32);
+
+  if (MLENExpr->isTypeDependent() || MLENExpr->isValueDependent() ||
+      !MLENExpr->isIntegerConstantExpr(S.Context)) {
+    S.Diag(Attr.getLoc(), diag::err_attribute_argument_type)
+        << Attr << AANT_ArgumentIntegerConstant << MLENExpr->getSourceRange();
+    Attr.setInvalid();
+    return;
+  }
+  unsigned MLEN = cast<IntegerLiteral>(MLENExpr)->getValue().getZExtValue();
+  CurType = S.Context.getVectorType(S.Context.BoolTy, 64 / MLEN, VectorType::RISCVVector);
+}
+
+static void HandleRISCVVectorBitsAttr(QualType &CurType, ParsedAttr &Attr,
+                                           Sema &S) {
+
+  llvm::APSInt RISCVVectorSizeInBits(32);
+  if (!verifyValidIntegerConstantExpr(S, Attr, RISCVVectorSizeInBits))
+    return;
+  unsigned VecSize = static_cast<unsigned>(RISCVVectorSizeInBits.getZExtValue());
+
+  const VectorType * Vector = CurType.getTypePtr()->getAs<const VectorType>();
+
+  QualType EltType = Vector->getElementType();
+  unsigned TypeSize = S.Context.getTypeSize(EltType);
+  VecSize = VecSize / TypeSize;
+
+  CurType = S.Context.getVectorType(EltType, VecSize, VectorType::RISCVFiexedLengthVector);
+}
+
 /// Handle OpenCL Access Qualifier Attribute.
 static void HandleOpenCLAccessAttr(QualType &CurType, const ParsedAttr &Attr,
                                    Sema &S) {
@@ -8093,6 +8279,18 @@ static void processTypeAttrs(TypeProcessingState &state, QualType &type,
       attr.setUsedAsTypeAttr();
       break;
     }
+    case ParsedAttr::AT_RISCVVectorType:
+      HandleRISCVVectorTypeAttr(type, attr, state.getSema());
+      attr.setUsedAsTypeAttr();
+      break;
+    case ParsedAttr::AT_RISCVMaskType:
+      HandleRISCVMaskTypeAttr(type, attr, state.getSema());
+      attr.setUsedAsTypeAttr();
+      break;
+    case ParsedAttr::AT_RISCVVectorBits:
+      HandleRISCVVectorBitsAttr(type, attr, state.getSema());
+      attr.setUsedAsTypeAttr();
+      break;
     case ParsedAttr::AT_OpenCLAccess:
       HandleOpenCLAccessAttr(type, attr, state.getSema());
       attr.setUsedAsTypeAttr();

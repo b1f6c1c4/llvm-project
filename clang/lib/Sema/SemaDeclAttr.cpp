@@ -5270,6 +5270,14 @@ static void handleArmBuiltinAliasAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
   D->addAttr(::new (S.Context) ArmBuiltinAliasAttr(S.Context, AL, Ident));
 }
 
+static void handleRiscvVectorBuiltinAliasAttr(Sema &S, Decl *D, const ParsedAttr &AL) {
+  IdentifierInfo *Ident = AL.getArgAsIdent(0)->Ident;
+  //unsigned BuiltinID = Ident->getBuiltinID();
+  //StringRef AliasName = cast<FunctionDecl>(D)->getIdentifier()->getName();
+
+  D->addAttr(::new (S.Context) RiscvVectorBuiltinAliasAttr(S.Context, AL, Ident));
+}
+
 //===----------------------------------------------------------------------===//
 // Checker-specific attribute handlers.
 //===----------------------------------------------------------------------===//
@@ -8305,6 +8313,10 @@ static void ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D,
 
   case ParsedAttr::AT_ArmBuiltinAlias:
     handleArmBuiltinAliasAttr(S, D, AL);
+    break;
+
+  case ParsedAttr::AT_RiscvVectorBuiltinAlias:
+    handleRiscvVectorBuiltinAliasAttr(S, D, AL);
     break;
 
   case ParsedAttr::AT_AcquireHandle:
