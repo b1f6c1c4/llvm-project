@@ -1652,10 +1652,10 @@ defm vwmaccsu : signed_ternary_w_vv_vx;
 defm vwmaccus : signed_ternary_w_vx;
 
 // 12.15. Vector Quad-Widening Integer Multiply-Add Instructions (Extension Zvqmac)
-defm vqmacc : signed_ternary_qw_vv_vx;
-defm vqmaccu : unsigned_ternary_qw_vv_vx;
-defm vqmaccsu : signed_ternary_qw_vv_vx;
-defm vqmaccus : signed_ternary_qw_vx;
+// defm vqmacc : signed_ternary_qw_vv_vx;
+// defm vqmaccu : unsigned_ternary_qw_vv_vx;
+// defm vqmaccsu : signed_ternary_qw_vv_vx;
+// defm vqmaccus : signed_ternary_qw_vx;
 
 // 12.16. Vector Integer Merge Instructions
 multiclass int_vmerge_vvm_vxm {
@@ -1856,7 +1856,7 @@ multiclass vwcvt {
                       [-1, 0], [-1, 0, 2]>;
   }
 }
-defm vwcvt : vwcvt;
+// defm vwcvt : vwcvt;
 
 multiclass vwcvtu {
   foreach I = AllUnsignedPairSEWx2 in {
@@ -1865,7 +1865,7 @@ multiclass vwcvtu {
                       [-1, 0], [-1, 0, 2]>;
   }
 }
-defm vwcvtu : vwcvtu;
+// defm vwcvtu : vwcvtu;
 
 // 14.17. Narrowing Floating-Point/Integer Type-Convert Instructions
 multiclass vfncvt {
@@ -2256,7 +2256,7 @@ multiclass reinterpret {
                              [-1, 0], []>;
   }
 }
-defm vreinterpret : reinterpret;
+// defm vreinterpret : reinterpret;
 
 // Vector Initialization Functions
 let ShouldEmitBuiltin = 0 in {

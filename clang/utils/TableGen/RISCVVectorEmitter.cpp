@@ -403,7 +403,7 @@ void RISCVVectorEmitter::createHeader(raw_ostream &OS) {
         }
         else
           OS << type->getTypeName() << " op" << count << ",";
-          count++;
+        count++;
       }
       OS <<"size_t vl) { vsetvl_e" << def->getSuffix().substr(1) <<"(vl); return ";
       OS << def->getName() << def->getInfix() <<"_"<< def->getSuffix();
@@ -537,8 +537,8 @@ void RISCVVectorEmitter::createBuiltins(raw_ostream &OS) {
 std::string Intrinsic::createStatementInCase() {
   std::string result = "";
   std::map<std::string, std::string> intrinsicMap= 
-    {{"vle", "vload"}, {"vse", "vstore"}, {"vlse", "vload_strided"}, {"vsse", "vstore_strided"},
-     {"vlxei", "vload_indexed"}, {"vsxei", "vstore_indexed"}};
+    {{"vle", "vle"}, {"vse", "vse"}, {"vlse", "vlse"}, {"vsse", "vsse"},
+     {"vlxei", "vloxei"}, {"vsxei", "vsoxei"}};
   if (isLoadOrStore()) {
     std::string Name = getName();
     std::string::iterator NameIter = Name.begin();
@@ -548,8 +548,20 @@ std::string Intrinsic::createStatementInCase() {
     if (isMask())
       result += "_mask";
     result += ", {";
+  } else if (getName().substr(0, 4) == "vamo") {
+    std::string Name = getName();
+    for (size_t i = 4; i < Name.length() - 1; i++)
+      if (Name[i] == 'e' && Name[i + 1] == 'i') {
+        Name = Name.substr(0, i);
+        break;
+      }
+    result += "Function *F = CGM.getIntrinsic(Intrinsic::riscv_" + Name;
+    result += ", {";
   } else {
-    result += "Function *F = CGM.getIntrinsic(Intrinsic::riscv_" + getName() + getInfix();
+    result += "Function *F = CGM.getIntrinsic(Intrinsic::riscv_" + getName();
+    if (getName() == "vsetvl") result += "i";
+    if (getName() == "vfcvt" || getName() == "vfncvt" || getName() == "vfwcvt"
+        || getName() == "vfmv" || getName() == "vmv") result += getInfix();
     if (isMask())
       result += "_mask";
     result += ", {";

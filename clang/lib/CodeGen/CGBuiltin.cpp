@@ -15504,12 +15504,11 @@ Value *CodeGenFunction::EmitRISCVBuiltinExpr(unsigned BuiltinID,
     Ops.push_back(EmitScalarExpr(E->getArg(i)));
   }
 
-  if (BuiltinID >= RISCV::BI__builtin_riscv_vreinterpret_v_f16m1_i16m1 && 
-      BuiltinID <= RISCV::BI__builtin_riscv_vreinterpret_v_u8mf8_i8mf8) {
-    return EmitRISCVReinterpret(Ops[0], ResultType);
-    
-  }
- 
+  // if (BuiltinID >= RISCV::BI__builtin_riscv_vreinterpret_v_f16m1_i16m1 &&
+  //     BuiltinID <= RISCV::BI__builtin_riscv_vreinterpret_v_u8mf8_i8mf8) {
+  //   return EmitRISCVReinterpret(Ops[0], ResultType);
+  // }
+
   switch (BuiltinID) {
     #define GEN_RISCV_VECTOR_BUILTIN_CG
     #include "clang/Basic/riscv_vector_builtin_cg.inc"
