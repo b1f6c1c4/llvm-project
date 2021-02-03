@@ -341,6 +341,11 @@ class Load_ri<bits<3> funct3, string opcodestr>
     : RVInstI<funct3, OPC_LOAD, (outs GPR:$rd), (ins GPR:$rs1, simm12:$imm12),
               opcodestr, "$rd, ${imm12}(${rs1})">;
 
+let hasSideEffects = 0, mayLoad = 1, mayStore = 0 in
+class Exload_ri<bits<3> funct3, string opcodestr>
+    : RVInstI<funct3, OPC_EXLOAD, (outs GPR:$rd), (ins GPR:$rs1, simm12:$imm12),
+              opcodestr, "$rd, ${imm12}(${rs1})">;
+
 // Operands for stores are in the order srcreg, base, offset rather than
 // reflecting the order these fields are specified in the instruction
 // encoding.
@@ -349,6 +354,13 @@ class Store_rri<bits<3> funct3, string opcodestr>
     : RVInstS<funct3, OPC_STORE, (outs),
               (ins GPR:$rs2, GPR:$rs1, simm12:$imm12),
               opcodestr, "$rs2, ${imm12}(${rs1})">;
+
+let hasSideEffects = 0, mayLoad = 0, mayStore = 1 in
+class Exstore_rri<bits<3> funct3, string opcodestr>
+    : RVInstS<funct3, OPC_EXSTORE, (outs),
+              (ins GPR:$rs2, GPR:$rs1, simm12:$imm12),
+              opcodestr, "$rs2, ${imm12}(${rs1})">;
+
 
 let hasSideEffects = 0, mayLoad = 0, mayStore = 0 in
 class ALU_ri<bits<3> funct3, string opcodestr>
@@ -432,9 +444,19 @@ def LW  : Load_ri<0b010, "lw">, Sched<[WriteLDW, ReadMemBase]>;
 def LBU : Load_ri<0b100, "lbu">, Sched<[WriteLDB, ReadMemBase]>;
 def LHU : Load_ri<0b101, "lhu">, Sched<[WriteLDH, ReadMemBase]>;
 
+def EXLB  : Exload_ri<0b000, "exlb">, Sched<[WriteLDB, ReadMemBase]>;
+def EXLH  : Exload_ri<0b001, "exlh">, Sched<[WriteLDH, ReadMemBase]>;
+def EXLW  : Exload_ri<0b010, "exlw">, Sched<[WriteLDW, ReadMemBase]>;
+def EXLBU : Exload_ri<0b100, "exlbu">, Sched<[WriteLDB, ReadMemBase]>;
+def EXLHU : Exload_ri<0b101, "exlhu">, Sched<[WriteLDH, ReadMemBase]>;
+
 def SB : Store_rri<0b000, "sb">, Sched<[WriteSTB, ReadStoreData, ReadMemBase]>;
 def SH : Store_rri<0b001, "sh">, Sched<[WriteSTH, ReadStoreData, ReadMemBase]>;
 def SW : Store_rri<0b010, "sw">, Sched<[WriteSTW, ReadStoreData, ReadMemBase]>;
+
+def EXSB : Exstore_rri<0b000, "exsb">, Sched<[WriteSTB, ReadStoreData, ReadMemBase]>;
+def EXSH : Exstore_rri<0b001, "exsh">, Sched<[WriteSTH, ReadStoreData, ReadMemBase]>;
+def EXSW : Exstore_rri<0b010, "exsw">, Sched<[WriteSTW, ReadStoreData, ReadMemBase]>;
 
 // ADDI isn't always rematerializable, but isReMaterializable will be used as
 // a hint which is verified in isReallyTriviallyReMaterializable.
@@ -739,12 +761,30 @@ def : InstAlias<"lbu $rd, (${rs1})",
 def : InstAlias<"lhu $rd, (${rs1})",
                 (LHU  GPR:$rd, GPR:$rs1, 0)>;
 
+def : InstAlias<"exlb $rd, (${rs1})",
+                (EXLB  GPR:$rd, GPR:$rs1, 0)>;
+def : InstAlias<"exlh $rd, (${rs1})",
+                (EXLH  GPR:$rd, GPR:$rs1, 0)>;
+def : InstAlias<"exlw $rd, (${rs1})",
+                (EXLW  GPR:$rd, GPR:$rs1, 0)>;
+def : InstAlias<"exlbu $rd, (${rs1})",
+                (EXLBU  GPR:$rd, GPR:$rs1, 0)>;
+def : InstAlias<"exlhu $rd, (${rs1})",
+                (EXLHU  GPR:$rd, GPR:$rs1, 0)>;
+
 def : InstAlias<"sb $rs2, (${rs1})",
                 (SB  GPR:$rs2, GPR:$rs1, 0)>;
 def : InstAlias<"sh $rs2, (${rs1})",
                 (SH  GPR:$rs2, GPR:$rs1, 0)>;
 def : InstAlias<"sw $rs2, (${rs1})",
                 (SW  GPR:$rs2, GPR:$rs1, 0)>;
+
+def : InstAlias<"exsb $rs2, (${rs1})",
+                (EXSB  GPR:$rs2, GPR:$rs1, 0)>;
+def : InstAlias<"exsh $rs2, (${rs1})",
+                (EXSH  GPR:$rs2, GPR:$rs1, 0)>;
+def : InstAlias<"exsw $rs2, (${rs1})",
+                (EXSW  GPR:$rs2, GPR:$rs1, 0)>;
 
 def : InstAlias<"add $rd, $rs1, $imm12",
                 (ADDI  GPR:$rd, GPR:$rs1, simm12:$imm12)>;
@@ -1059,6 +1099,14 @@ defm : LdPat<load, LW>, Requires<[IsRV32]>;
 defm : LdPat<zextloadi8, LBU>;
 defm : LdPat<zextloadi16, LHU>;
 
+defm : LdPat<sextloadi8, EXLB>;
+defm : LdPat<extloadi8, EXLB>;
+defm : LdPat<sextloadi16, EXLH>;
+defm : LdPat<extloadi16, EXLH>;
+defm : LdPat<load, EXLW>, Requires<[IsRV32]>;
+defm : LdPat<zextloadi8, EXLBU>;
+defm : LdPat<zextloadi16, EXLHU>;
+
 /// Stores
 
 multiclass StPat<PatFrag StoreOp, RVInst Inst, RegisterClass StTy> {
@@ -1075,6 +1123,10 @@ multiclass StPat<PatFrag StoreOp, RVInst Inst, RegisterClass StTy> {
 defm : StPat<truncstorei8, SB, GPR>;
 defm : StPat<truncstorei16, SH, GPR>;
 defm : StPat<store, SW, GPR>, Requires<[IsRV32]>;
+
+defm : StPat<truncstorei8, EXSB, GPR>;
+defm : StPat<truncstorei16, EXSH, GPR>;
+defm : StPat<store, EXSW, GPR>, Requires<[IsRV32]>;
 
 /// Fences
 
@@ -1141,10 +1193,15 @@ defm : LdPat<extloadi32, LW>;
 defm : LdPat<zextloadi32, LWU>;
 defm : LdPat<load, LD>;
 
+defm : LdPat<sextloadi32, EXLW>; // Maybe Not Needed for Nibbler?
+defm : LdPat<extloadi32, EXLW>; // Maybe Not Needed for Nibbler?
+
 /// Stores
 
 defm : StPat<truncstorei32, SW, GPR>;
 defm : StPat<store, SD, GPR>;
+
+defm : StPat<truncstorei32, EXSW, GPR>; // Maybe Not Needed for Nibbler?
 } // Predicates = [IsRV64]
 
 /// readcyclecounter
