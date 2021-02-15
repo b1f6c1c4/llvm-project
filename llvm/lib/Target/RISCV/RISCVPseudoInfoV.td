@@ -348,6 +348,13 @@ foreach I = AllLMULs in {
           : Pseudo<(outs I.RegClass:$rd), (ins I.RegClass:$merge,
                  GPR:$rs1, VMaskOp:$mask, ixlenimm:$sew), []>,
           RISCVVectorPseudo;
+
+      let Uses = [VL, VTYPE], SEWIndex = 5, MergeOpIndex = 1,
+        BaseInstr = !cast<Instruction>("VLSE"#sew#"_V") in
+        def PseudoVLSE#sew#_V_M#lmul
+          : Pseudo<(outs I.RegClass:$rd), (ins I.RegClass:$merge,
+                 GPR:$rs1, GPR:$stride, VMaskOp:$mask, ixlenimm:$sew), []>,
+          RISCVVectorPseudo;
      
       let Uses = [VL, VTYPE], SEWIndex = 5, MergeOpIndex = 1,
         BaseInstr = !cast<Instruction>("VLXEI"#sew#"_V") in
@@ -366,12 +373,21 @@ foreach I = AllLMULs in {
     }
 
     let mayLoad = 0, mayStore = 1, hasSideEffects = 0, usesCustomInserter = 1,
-        LMUL = I.LMUL, Uses = [VL, VTYPE], SEWIndex = 4, MergeOpIndex = 0,
-        BaseInstr = !cast<Instruction>("VSE"#sew#"_V") in {
-      def PseudoVSE#sew#_V_M#lmul
-        : Pseudo<(outs), (ins I.RegClass:$merge, I.RegClass:$rs1,
-                 GPR:$rs2, VMaskOp:$mask, ixlenimm:$sew), []>,
-          RISCVVectorPseudo;
+        LMUL = I.LMUL in
+    {
+      let Uses = [VL, VTYPE], SEWIndex = 4, MergeOpIndex = 0,
+        BaseInstr = !cast<Instruction>("VSE"#sew#"_V") in
+        def PseudoVSE#sew#_V_M#lmul
+          : Pseudo<(outs), (ins I.RegClass:$merge, I.RegClass:$rs1,
+                   GPR:$rs2, VMaskOp:$mask, ixlenimm:$sew), []>,
+            RISCVVectorPseudo;
+
+      let Uses = [VL, VTYPE], SEWIndex = 5, MergeOpIndex = 0,
+        BaseInstr = !cast<Instruction>("VSSE"#sew#"_V") in
+        def PseudoVSSE#sew#_V_M#lmul
+          : Pseudo<(outs), (ins I.RegClass:$merge, I.RegClass:$rs1,
+                   GPR:$rs2, GPR:$stride, VMaskOp:$mask, ixlenimm:$sew), []>,
+            RISCVVectorPseudo;
     }
   
   }  
@@ -1528,6 +1544,21 @@ multiclass pat_intrinsic_vload_store {
     def : Pat<(store (I.Type I.RegClass:$rs1), i64:$rs2),
               (!cast<Instruction>("PseudoVS"#RoundFMToM1<str>.Result#"R_V")
               (I.Type zero_reg), (I.Type I.RegClass:$rs1), i64:$rs2, I.SEW)>;
+
+    def : Pat<(I.Type (int_riscv_vload_strided i64:$rs1, i64:$stride)),
+              (I.Type (!cast<Instruction>("PseudoVLSE"#I.SEW#"_V_M"#str)
+                        (I.Type zero_reg), i64:$rs1, i64:$stride, (I.Mask zero_reg),
+                        I.SEW))>;
+
+    def : Pat<(int_riscv_vstore_strided i64:$rs2, i64:$stride, (I.Type I.RegClass:$rs1)),
+                   (!cast<Instruction>("PseudoVSSE"#I.SEW#"_V_M"#str)
+                   (I.Type zero_reg), (I.Type I.RegClass:$rs1), i64:$rs2,
+                   i64:$stride, (I.Mask zero_reg), I.SEW)>;
+
+    def : Pat<(int_riscv_vstore_strided_mask (I.Type zero_reg), i64:$rs2, i64:$stride, (I.Type I.RegClass:$rs1)),
+                   (!cast<Instruction>("PseudoVSSE"#I.SEW#"_V_M"#str#"_mask")
+                   (I.Type zero_reg), (I.Mask zero_reg), (I.Type I.RegClass:$rs1),
+                   i64:$rs2, i64:$stride, (I.Mask zero_reg), I.SEW)>;
 
     def : Pat<(I.Type (int_riscv_vload_indexed i64:$rs1, (I.Type I.RegClass:$rs2))),
               (I.Type (!cast<Instruction>("PseudoVLXEI"#I.SEW#"_V_M"#str)

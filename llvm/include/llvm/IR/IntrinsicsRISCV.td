@@ -633,8 +633,8 @@ multiclass Vstore {
                                    llvm_anyvector_ty, llvm_i64_ty],
                                   [IntrWriteMem]>;
   def "_strided_mask" : Intrinsic<[],
-                                  [llvm_anyptr_ty, llvm_i64_ty,
-                                   llvm_anyvector_ty],
+                                  [llvm_anyvector_ty, llvm_anyptr_ty,
+                                   llvm_i64_ty, llvm_anyvector_ty],
                                   [IntrWriteMem]>;
   def "_indexed_mask" : Intrinsic<[],
                                   [llvm_anyvector_ty, llvm_anyptr_ty,
