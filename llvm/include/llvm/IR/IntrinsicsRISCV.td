@@ -593,7 +593,7 @@ multiclass Vload {
   def "_indexed"      : Intrinsic<[llvm_anyvector_ty],
                                   [llvm_anyptr_ty, llvm_anyvector_ty],
                                   [IntrReadMem]>;
-  def "_faultfirst" : Intrinsic<[llvm_anyvector_ty],
+  def "_faultfirst"   : Intrinsic<[llvm_anyvector_ty],
                                   [llvm_anyptr_ty],
                                   [IntrReadMem]>;
   def "_mask"         : Intrinsic<[llvm_anyvector_ty],
@@ -623,14 +623,14 @@ multiclass Vstore {
                                   [llvm_anyptr_ty, llvm_i64_ty,
                                    llvm_anyvector_ty],
                                   [IntrWriteMem]>;
-  def "_mask"         : Intrinsic<[],
-                                  [llvm_anyvector_ty, llvm_anyptr_ty,
-                                   llvm_anyvector_ty],
-                                  [IntrWriteMem]>;
   def "_indexed"      : Intrinsic<[],
                                   [llvm_anyvector_ty,
                                    LLVMPointerType<LLVMMatchType<0>>,
                                    llvm_anyvector_ty, llvm_i64_ty],
+                                  [IntrWriteMem]>;
+  def "_mask"         : Intrinsic<[],
+                                  [llvm_anyvector_ty, llvm_anyptr_ty,
+                                   llvm_anyvector_ty],
                                   [IntrWriteMem]>;
   def "_strided_mask" : Intrinsic<[],
                                   [llvm_anyvector_ty, llvm_anyptr_ty,
