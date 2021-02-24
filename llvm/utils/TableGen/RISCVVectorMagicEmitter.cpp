@@ -23,7 +23,7 @@ private:
   RecordKeeper &Records;
 
   void genOperand(raw_ostream &OS, const std::string &Str, int V);
-  void genCase(raw_ostream &OS, int Rs2, int Rs1, int Rd);
+  void genCase(raw_ostream &OS, int Rs2, int Rs1, int Rd, bool Suffix = false);
   void genLabel(raw_ostream &OS, const std::string &Class);
 
 public:
@@ -45,12 +45,15 @@ void RISCVVectorMagicEmitter::genOperand(raw_ostream &OS, const std::string &Str
   }
 }
 
-void RISCVVectorMagicEmitter::genCase(raw_ostream &OS, int Rs2, int Rs1, int Rd) {
+void RISCVVectorMagicEmitter::genCase(raw_ostream &OS, int Rs2, int Rs1, int Rd, bool Suffix) {
   OS << " {\n";
   genOperand(OS, "Rs2", Rs2);
   genOperand(OS, "Rs1", Rs1);
   genOperand(OS, "Rd", Rd);
-  OS << "      return true;\n";
+  if (!Suffix)
+    OS << "      return true;\n";
+  else
+    OS << "      break;\n";
   OS << "    }";
 }
 
@@ -81,11 +84,28 @@ void RISCVVectorMagicEmitter::run(raw_ostream &OS) {
   genLabel(OS, "RVInstVSS"), genCase(OS, 2, 1, -1);
   genLabel(OS, "RVInstVSX"), genCase(OS, -1, 1, -1);
   genLabel(OS, "RVInstVAMO"), genCase(OS, -1, 0, -1);
+  genLabel(OS, "CSR_ir"), genCase(OS, -1, 2, 0, true);
+  genLabel(OS, "CSR_ii"), genCase(OS, -1, -1, 0, true);
 
   OS << "\n    default:\n";
   OS << "      return false;\n";
+
   OS << "  }\n";
+
+  OS << "  assert(Inst.getOperand(1).isImm() && \"operand is not a immediate\");\n";
+  OS << "  switch (Inst.getOperand(1).getImm()) {\n";
+  OS << "    case 0x008:\n";
+  OS << "    case 0x009:\n";
+  OS << "    case 0x00a:\n";
+  OS << "    case 0x00f:\n";
+  OS << "    case 0xc20:\n";
+  OS << "    case 0xc21:\n";
+  OS << "    case 0xc22:\n";
+  OS << "      return true;\n";
+  OS << "  }\n";
+  OS << "  return false;\n";
   OS << "}\n\n";
+
   OS << "#endif //GEN_VECTOR_MAGIC\n\n";
 }
 
