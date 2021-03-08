@@ -220,6 +220,29 @@ defset list<WideVectorInfo> AllWideIntegerVectors = {
   def Widev8xi32 : WideVectorInfo<Vtypev8xi32, nxv8i64, VRM8, "8">;
 }
 
+defset list<WideVectorInfo> AllDoubleWideIntegerVectors = {
+  def DWidev1xi8 : WideVectorInfo<Vtypev1xi8, nxv1i16, VR, "F4_8_MF8">;
+
+  def DWidev1xi16 : WideVectorInfo<Vtypev1xi16, nxv1i32, VR, "F2_16_MF4">;
+  def DWidev2xi8 : WideVectorInfo<Vtypev2xi8, nxv2i16, VR, "F2_8_MF4">;
+
+  def DWidev1xi32 : WideVectorInfo<Vtypev1xi32, nxv1i64, VR, "1_32_MF2">;
+  def DWidev2xi16 : WideVectorInfo<Vtypev2xi16, nxv2i32, VR, "1_16_MF2">;
+  def DWidev4xi8 : WideVectorInfo<Vtypev4xi8, nxv4i16, VR, "1_8_MF2">;
+
+  def DWidev8xi8 : WideVectorInfo<Vtypev8xi8, nxv8i16, VRM2, "2_8_M1">;
+  def DWidev4xi16 : WideVectorInfo<Vtypev4xi16, nxv4i32, VRM2, "2_16_M1">;
+  def DWidev2xi32 : WideVectorInfo<Vtypev2xi32, nxv2i64, VRM2, "2_32_M1">;
+
+  def DWidev16xi8 : WideVectorInfo<Vtypev16xi8, nxv16i16, VRM4, "4_8_M2">;
+  def DWidev8xi16 : WideVectorInfo<Vtypev8xi16, nxv8i32, VRM4, "4_16_M2">;
+  def DWidev4xi32 : WideVectorInfo<Vtypev4xi32, nxv4i64, VRM4, "4_32_M2">;
+
+  def DWidev32xi8 : WideVectorInfo<Vtypev32xi8, nxv32i16, VRM8, "8_8_M4">;
+  def DWidev16xi16 : WideVectorInfo<Vtypev16xi16, nxv16i32, VRM8, "8_16_M4">;
+  def DWidev8xi32 : WideVectorInfo<Vtypev8xi32, nxv8i64, VRM8, "8_32_M4">;
+}
+
 defset list<WideVectorInfo> AllQuadWideIntegerVectors = {
   // vint32mf2_t, vint8mf8_t
   def QWidev1xi8 : WideVectorInfo<Vtypev1xi8, nxv1i32, VR, "F2_8_MF8">;
@@ -239,6 +262,17 @@ defset list<WideVectorInfo> AllQuadWideIntegerVectors = {
   def QWidev4xi16 : WideVectorInfo<Vtypev4xi16, nxv4i64, VRM4, "4_16_M1">;
   // vint64m8_t, vint16m2_t op1
   def QWidev8xi16 : WideVectorInfo<Vtypev8xi16, nxv8i64, VRM8, "8_16_M2">;
+}
+
+defset list<WideVectorInfo> AllOctWideIntegerVectors = {
+  // vint64m1_t, vint8mf8_t
+  def OWidev1xi8 : WideVectorInfo<Vtypev1xi8, nxv1i64, VR, "1_8_MF8">;
+  // vint64m2_t, vint8mf4_t
+  def OWidev2xi8 : WideVectorInfo<Vtypev2xi8, nxv2i64, VRM2, "2_8_MF4">;
+  // vint64m4_t, vint8mf2_t
+  def OWidev4xi8 : WideVectorInfo<Vtypev4xi8, nxv4i64, VRM4, "4_8_MF2">;
+  // vint64m8_t, vint8m1_t
+  def OWidev8xi8 : WideVectorInfo<Vtypev8xi8, nxv8i64, VRM8, "8_8_M1">;
 }
 
 class VectorTypeInfoPair<VectorTypeInfo first, VectorTypeInfo second,
@@ -433,6 +467,21 @@ multiclass pseudo_unary_v_w<string constraints = ""> {
                              constraints>;
     }
   }
+}
+
+multiclass pseudo_int_extension {
+  foreach I = AllDoubleWideIntegerVectors in
+    let LMUL = I.OriginVector.LMUL in
+      defm _VF2 : pseudo_unary<I.WidenRegClass, I.OriginVector.RegClass,
+                               I.WidenLMULstr>;
+  foreach I = AllQuadWideIntegerVectors in
+    let LMUL = I.OriginVector.LMUL in
+      defm _VF4 : pseudo_unary<I.WidenRegClass, I.OriginVector.RegClass,
+                               I.WidenLMULstr>;
+  foreach I = AllOctWideIntegerVectors in
+    let LMUL = I.OriginVector.LMUL in
+      defm _VF8 : pseudo_unary<I.WidenRegClass, I.OriginVector.RegClass,
+                               I.WidenLMULstr>;
 }
 
 // vop.m vd, vs2, vm
@@ -878,6 +927,25 @@ multiclass pat_intrinsic_int_unary_v<string intrinsic_name,
     defm : pat_intrinsic_unary<intrinsic_name#"_v", insn_name#"_V",
                                I.Type, I.Type, I.Mask, I.SEW, I.LMULstr,
                                I.RegClass, I.RegClass>;
+}
+
+multiclass pat_intrinsic_int_extension<string intrinsic_name,
+                                       string insn_name> {
+  foreach I = AllDoubleWideIntegerVectors in
+    defm : pat_intrinsic_unary<intrinsic_name#"_vf2", insn_name#"_VF2",
+                               I.WidenVector, I.OriginVector.Type,
+                               I.OriginVector.Mask, I.WidenSEW, I.WidenLMULstr,
+                               I.WidenRegClass, I.OriginVector.RegClass>;
+  foreach I = AllQuadWideIntegerVectors in
+    defm : pat_intrinsic_unary<intrinsic_name#"_vf4", insn_name#"_VF4",
+                               I.WidenVector, I.OriginVector.Type,
+                               I.OriginVector.Mask, I.WidenSEW, I.WidenLMULstr,
+                               I.WidenRegClass, I.OriginVector.RegClass>;
+  foreach I = AllOctWideIntegerVectors in
+    defm : pat_intrinsic_unary<intrinsic_name#"_vf8", insn_name#"_VF8",
+                               I.WidenVector, I.OriginVector.Type,
+                               I.OriginVector.Mask, I.WidenSEW, I.WidenLMULstr,
+                               I.WidenRegClass, I.OriginVector.RegClass>;
 }
 
 multiclass pat_intrinsic_float_unary_v_v<string intrinsic_name,
@@ -1621,6 +1689,10 @@ defm : pat_intrinsic_int_binary_w_vX0<"int_riscv_vwcvt_x_x_v", "PseudoVWADD_VX">
 defm : pat_intrinsic_int_binary_w_vX0<"int_riscv_vwcvtu_x_x_v", "PseudoVWADDU_VX">;
 
 // 12.3. Vector Integer Extension
+defm PseudoVSEXT : pseudo_int_extension;
+defm PseudoVZEXT : pseudo_int_extension;
+defm : pat_intrinsic_int_extension<"int_riscv_vsext", "PseudoVSEXT">;
+defm : pat_intrinsic_int_extension<"int_riscv_vzext", "PseudoVZEXT">;
 
 // 12.4. Vector Integer Add-with-Carry/Subtract-with-Borrow Instructions
 defm PseudoVADC : pseudo_binary_v_vvm_vxm;
