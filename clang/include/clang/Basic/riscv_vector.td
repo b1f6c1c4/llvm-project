@@ -1010,6 +1010,19 @@ multiclass signed_binary_m_vv_vx {
   }
 }
 
+// vbool*_t vop_vv_i*m*_b* (vint*m*_t op1, vint*m*_t op2);
+// vbool*_t vop_vx_i*m*_b* (vint*m*_t op1, int*_t op2);
+multiclass signed_binary_m_vv_vx_nomask {
+  foreach I = AllSignedVectorType in {
+    defm NAME : BinaryMaskOff<NAME, I.BoolValue, I.Value, I.Value, "_vv",
+                              I.Name#"_"#I.Mask, I.BoolValue,
+                              [-1, 0], []>;
+    defm NAME : BinaryMaskOff<NAME, I.BoolValue, I.Value, I.ElemType.Value,
+                              "_vx", I.Name#"_"#I.Mask, I.BoolValue,
+                              [-1, 0, 1], []>;
+  }
+}
+
 // vbool*_t vop_vv_u*m*_b* (vuint*m*_t op1, vuint*m*_t op2);
 // vbool*_t vop_vx_u*m*_b* (vuint*m*_t op1, uint*_t op2);
 // vbool*_t vop_vv_u*m*_b*_m (vbool*_t mask, vbool*_t maskedoff,
@@ -1165,6 +1178,18 @@ multiclass int_ternary_v_vvm_vxm {
                                "_vvm", I.Name, "", [-1, 2], []>;
     defm NAME : TernaryMaskOff<NAME, I.Value, I.Value, I.ElemType.Value,
                                I.BoolValue, "_vxm", I.Name, "", [-1, 1, 2], []>;
+  }
+}
+
+// vbool*_t vop_vvm_i*m*_b* (vint*m*_t op1, vint*m*_t op2, vbool*_t carryin);
+// vbool*_t vop_vxm_i*m*_b* (vint*m*_t op1, int*_t op2, vbool*_t carryin);
+multiclass int_ternary_m_vvm_vxm {
+  foreach I = AllIntVectorType in {
+    defm NAME : TernaryMaskOff<NAME, I.BoolValue, I.Value, I.Value, I.BoolValue,
+                               "_vvm", I.Name#"_"#I.Mask, "", [-1, 0], []>;
+    defm NAME : TernaryMaskOff<NAME, I.BoolValue, I.Value, I.ElemType.Value,
+                               I.BoolValue, "_vxm", I.Name#"_"#I.Mask, "",
+                               [-1, 0, 1], []>;
   }
 }
 
@@ -1650,9 +1675,10 @@ defm vzext : unsigned_unary_vfn;
 // 12.4. Vector Integer Add-with-Carry/Subtract-with-Borrow Instructions
 defm vadc : int_ternary_v_vvm_vxm;
 defm vsbc : int_ternary_v_vvm_vxm;
-// TODO:
-// defm vmadc :
-// defm vmsbc :
+defm vmadc : int_ternary_m_vvm_vxm;
+defm vmsbc : int_ternary_m_vvm_vxm;
+defm vmadc : signed_binary_m_vv_vx_nomask;
+defm vmsbc : signed_binary_m_vv_vx_nomask;
 
 // 12.5. Vector Bitwise Logical Instructions
 defm vand : int_binary_v_vv_vx;
