@@ -1325,6 +1325,12 @@ multiclass pat_intrinsic_ternary<string intrinsic_name, string insn_name,
                           (arg1_type arg1:$rs1), (arg2_type arg2:$rs2))),
             (insn result:$merge, ToScalarOp<arg1_type, arg1, "rs1">.Result,
                   arg2:$rs2, (mask_type zero_reg), sew)>;
+
+  def : Pat<(result_type (!cast<Intrinsic>(intrinsic_name#"_mask")
+                          (mask_type V0), (result_type result:$merge),
+                          (arg1_type arg1:$rs1), (arg2_type arg2:$rs2))),
+            (insn result:$merge, ToScalarOp<arg1_type, arg1, "rs1">.Result,
+                  arg2:$rs2, (mask_type V0), sew)>;
 }
 
 multiclass pat_intrinsic_ternary_nomask<string intrinsic_name,
