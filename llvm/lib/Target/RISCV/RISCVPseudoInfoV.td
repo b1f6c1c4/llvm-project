@@ -739,7 +739,7 @@ multiclass pseudo_binary_m_vvm_vxm<string constraints = ""> {
     let LMUL = I.LMUL in {
       defm _VVM : pseudo_binary_carryin<VM, I.RegClass, I.RegClass,
                                         I.LMULstr, constraints>;
-      defm _VXM : pseudo_binary_carryin<VM, I.RegClass, I.RegClass,
+      defm _VXM : pseudo_binary_carryin<VM, I.RegClass, GPR,
                                         I.LMULstr, constraints>;
     }
   }
@@ -752,10 +752,24 @@ multiclass pseudo_binary_m_vv<string constraints = ""> {
                                constraints>;
 }
 
+multiclass pseudo_binary_m_vv_nomask<string constraints = ""> {
+  foreach I = AllLMULs in
+    let LMUL = I.LMUL in
+      defm _VV : pseudo_binary_nomask<VM, I.RegClass, I.RegClass, I.LMULstr,
+                                      constraints>;
+}
+
 multiclass pseudo_binary_m_vx<string constraints = ""> {
   foreach I = AllLMULs in
     let LMUL = I.LMUL in
       defm _VX : pseudo_binary<VM, I.RegClass, GPR, I.LMULstr, constraints>;
+}
+
+multiclass pseudo_binary_m_vx_nomask<string constraints = ""> {
+  foreach I = AllLMULs in
+    let LMUL = I.LMUL in
+      defm _VX : pseudo_binary_nomask<VM, I.RegClass, GPR, I.LMULstr,
+                                      constraints>;
 }
 
 multiclass pseudo_binary_m_vf<string constraints = ""> {
@@ -766,6 +780,9 @@ multiclass pseudo_binary_m_vf<string constraints = ""> {
 
 multiclass pseudo_binary_m_vv_vx<string constraints = "">
   : pseudo_binary_m_vv<constraints>, pseudo_binary_m_vx<constraints>;
+
+multiclass pseudo_binary_m_vv_vx_nomask<string constraints = "">
+  : pseudo_binary_m_vv_nomask<constraints>, pseudo_binary_m_vx_nomask<constraints>;
 
 multiclass pseudo_binary_m_vv_vf<string constraints = "">
   : pseudo_binary_m_vv<constraints>, pseudo_binary_m_vf<constraints>;
@@ -1122,17 +1139,27 @@ multiclass pat_intrinsic_binary<string intrinsic_name, string insn_name,
               (insn (mask_type V0), sew), swap>.Value>;
 }
 
-multiclass pat_intrinsic_binary_carryin<string intrinsic_name,
-                                        string insn_name,
+multiclass pat_intrinsic_binary_nomask<string intrinsic_name, string insn_name,
+                                       ValueType result_type,
+                                       ValueType arg1_type, ValueType arg2_type,
+                                       ValueType mask_type, int sew,
+                                       string lmul, RegisterClass result,
+                                       RegisterClass arg1, DAGOperand arg2> {
+  defvar insn = !cast<Instruction>(insn_name#"_M"#lmul);
+  def : Pat<(result_type (!cast<Intrinsic>(intrinsic_name)
+                          (arg1_type arg1:$rs1), (arg2_type arg2:$rs2))),
+            (insn (result_type (IMPLICIT_DEF)), arg1:$rs1,
+                  ToScalarOp<arg2_type, arg2, "rs2">.Result, sew)>;
+}
+
+multiclass pat_intrinsic_binary_carryin<string intrinsic_name, string insn_name,
                                         ValueType result_type,
                                         ValueType arg1_type,
                                         ValueType arg2_type,
                                         ValueType carry_type,
                                         int sew, string lmul,
                                         RegisterClass result,
-                                        RegisterClass arg1,
-                                        DAGOperand arg2,
-                                        bit swap = 0> {
+                                        RegisterClass arg1, DAGOperand arg2> {
   defvar insn = !cast<Instruction>(insn_name#"_M"#lmul);
   def : Pat<(result_type (!cast<Intrinsic>(intrinsic_name)
                           (arg1_type arg1:$rs1), (arg2_type arg2:$rs2),
@@ -1285,6 +1312,14 @@ multiclass pat_intrinsic_int_binary_m_vv<string intrinsic_name,
                                 I.SEW, I.LMULstr, VM, I.RegClass, I.RegClass>;
 }
 
+multiclass pat_intrinsic_int_binary_m_vv_carryin<string intrinsic_name,
+                                                 string insn_name> {
+  foreach I = AllIntegerVectors in
+    defm : pat_intrinsic_binary_nomask<intrinsic_name#"_vv", insn_name#"_VV",
+                                       I.Mask, I.Type, I.Type, I.Mask,
+                                       I.SEW, I.LMULstr, VM, I.RegClass, I.RegClass>;
+}
+
 multiclass pat_intrinsic_int_binary_m_vx<string intrinsic_name,
                                          string insn_name> {
   foreach I = AllIntegerVectors in
@@ -1293,10 +1328,23 @@ multiclass pat_intrinsic_int_binary_m_vx<string intrinsic_name,
                                 I.SEW, I.LMULstr, VM, I.RegClass, GPR>;
 }
 
+multiclass pat_intrinsic_int_binary_m_vx_carryin<string intrinsic_name,
+                                                 string insn_name> {
+  foreach I = AllIntegerVectors in
+    defm : pat_intrinsic_binary_nomask<intrinsic_name#"_vx", insn_name#"_VX",
+                                       I.Mask, I.Type, XLenVT, I.Mask,
+                                       I.SEW, I.LMULstr, VM, I.RegClass, GPR>;
+}
+
 multiclass pat_intrinsic_int_binary_m_vv_vx<string intrinsic_name,
                                             string insn_name>
   : pat_intrinsic_int_binary_m_vv<intrinsic_name, insn_name>,
     pat_intrinsic_int_binary_m_vx<intrinsic_name, insn_name>;
+
+multiclass pat_intrinsic_int_binary_m_vv_vx_carryin<string intrinsic_name,
+                                                    string insn_name>
+  : pat_intrinsic_int_binary_m_vv_carryin<intrinsic_name, insn_name>,
+    pat_intrinsic_int_binary_m_vx_carryin<intrinsic_name, insn_name>;
 
 multiclass pat_intrinsic_float_binary_m_vv<string intrinsic_name,
                                            string insn_name> {
@@ -1343,15 +1391,15 @@ multiclass pat_intrinsic_int_binary_m_vvm_vxm<string intrinsic_name,
                                               string insn_name> {
   foreach I = AllIntegerVectors in {
     defm : pat_intrinsic_binary_carryin<intrinsic_name#"_vvm",
-                                        insn_name#"_VVM", I.Mask,
-                                        I.Type, I.Type, I.Mask, I.SEW,
-                                        I.LMULstr, VMV0, I.RegClass,
-                                        I.RegClass>;
+                                        insn_name#"_VVM",
+                                        I.Mask, I.Type, I.Type, I.Mask,
+                                        I.SEW, I.LMULstr, VM,
+                                        I.RegClass, I.RegClass>;
     defm : pat_intrinsic_binary_carryin<intrinsic_name#"_vxm",
-                                        insn_name#"_VXM", I.Mask,
-                                        I.Type, I.Type, I.Mask, I.SEW,
-                                        I.LMULstr, VMV0, I.RegClass,
-                                        I.RegClass>;
+                                        insn_name#"_VXM",
+                                        I.Mask, I.Type, XLenVT, I.Mask,
+                                        I.SEW, I.LMULstr, VM,
+                                        I.RegClass, GPR>;
   }
 }
 
@@ -1697,10 +1745,16 @@ defm : pat_intrinsic_int_extension<"int_riscv_vzext", "PseudoVZEXT">;
 // 12.4. Vector Integer Add-with-Carry/Subtract-with-Borrow Instructions
 defm PseudoVADC : pseudo_binary_v_vvm_vxm;
 defm PseudoVMADC : pseudo_binary_m_vvm_vxm<"@earlyclobber $rd">;
+defm PseudoVMADC : pseudo_binary_m_vv_vx_nomask<"@earlyclobber $rd">;
 defm PseudoVSBC : pseudo_binary_v_vvm_vxm;
-defm PseudoVMSBC : pseudo_binary_v_vvm_vxm<"@earlyclobber $rd">;
+defm PseudoVMSBC : pseudo_binary_m_vvm_vxm<"@earlyclobber $rd">;
+defm PseudoVMSBC : pseudo_binary_m_vv_vx_nomask<"@earlyclobber $rd">;
 defm : pat_intrinsic_int_binary_v_vvm_vxm<"int_riscv_vadc", "PseudoVADC">;
 defm : pat_intrinsic_int_binary_m_vvm_vxm<"int_riscv_vmadc", "PseudoVMADC">;
+defm : pat_intrinsic_int_binary_m_vv_vx_carryin<"int_riscv_vmadc", "PseudoVMADC">;
+defm : pat_intrinsic_int_binary_v_vvm_vxm<"int_riscv_vsbc", "PseudoVSBC">;
+defm : pat_intrinsic_int_binary_m_vvm_vxm<"int_riscv_vmsbc", "PseudoVMSBC">;
+defm : pat_intrinsic_int_binary_m_vv_vx_carryin<"int_riscv_vmsbc", "PseudoVMSBC">;
 
 // 12.5. Vector Bitwise Logical Instructions
 defm PseudoVAND : pseudo_binary_v_vv_vx;
