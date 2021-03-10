@@ -1713,7 +1713,7 @@ defm vmsle : signed_binary_m_vv_vx;
 defm vmsleu : unsigned_binary_m_vv_vx;
 defm vmsgt : signed_binary_m_vx;
 defm vmsgtu : unsigned_binary_m_vx;
-//defm vmsge : signed_binary_m_vv_vx;
+// defm vmsge : signed_binary_m_vv_vx;
 // defm vmsgeu : unsigned_binary_m_vv_vx;
 let ShouldEmitBuiltin = 0 in {
   foreach I = AllSignedVectorType in {
@@ -1722,10 +1722,20 @@ let ShouldEmitBuiltin = 0 in {
            I.Name#"_"#I.Mask, 0, [-1],
            "vmsle_vv_"#I.Name#"_"#I.Mask#"(ARG1, ARG0)">;
 
+    def "vmsge_vv"#I.Name#"_"#I.Mask#"_mask" : Inst<"vmsge",
+           [I.BoolValue, I.BoolValue, I.BoolValue, I.Value, I.Value], "_vv",
+           I.Name#"_"#I.Mask, 1, [-1],
+           "vmsle_vv_"#I.Name#"_"#I.Mask#"_m(ARG0, ARG1, ARG3, ARG2)">;
+
     def "vmsgt_vv"#I.Name#"_"#I.Mask : Inst<"vmsgt",
            [I.BoolValue, I.Value, I.Value], "_vv",
            I.Name#"_"#I.Mask, 0, [-1],
            "vmslt_vv_"#I.Name#"_"#I.Mask#"(ARG1, ARG0)">;
+
+    def "vmsgt_vv"#I.Name#"_"#I.Mask#"_mask" : Inst<"vmsgt",
+           [I.BoolValue, I.BoolValue, I.BoolValue, I.Value, I.Value], "_vv",
+           I.Name#"_"#I.Mask, 1, [-1],
+           "vmslt_vv_"#I.Name#"_"#I.Mask#"_m(ARG0, ARG1, ARG3, ARG2)">;
   }
   foreach I = AllUnsignedVectorType in {
     def "vmsgeu_vv"#I.Name#"_"#I.Mask : Inst<"vmsgeu",
@@ -1733,10 +1743,20 @@ let ShouldEmitBuiltin = 0 in {
            I.Name#"_"#I.Mask, 0, [-1],
            "vmsleu_vv_"#I.Name#"_"#I.Mask#"(ARG1, ARG0)">;
 
+    def "vmsgeu_vv"#I.Name#"_"#I.Mask#"_mask" : Inst<"vmsgeu",
+           [I.BoolValue, I.BoolValue, I.BoolValue, I.Value, I.Value], "_vv",
+           I.Name#"_"#I.Mask, 1, [-1],
+           "vmsleu_vv_"#I.Name#"_"#I.Mask#"_m(ARG0, ARG1, ARG3, ARG2)">;
+
     def "vmsgtu_vv"#I.Name#"_"#I.Mask : Inst<"vmsgtu",
            [I.BoolValue, I.Value, I.Value], "_vv",
            I.Name#"_"#I.Mask, 0, [-1],
            "vmsltu_vv_"#I.Name#"_"#I.Mask#"(ARG1, ARG0)">;
+
+    def "vmsgtu_vv"#I.Name#"_"#I.Mask#"_mask" : Inst<"vmsgtu",
+           [I.BoolValue, I.BoolValue, I.BoolValue, I.Value, I.Value], "_vv",
+           I.Name#"_"#I.Mask, 1, [-1],
+           "vmsltu_vv_"#I.Name#"_"#I.Mask#"_m(ARG0, ARG1, ARG3, ARG2)">;
   }
 }
 
