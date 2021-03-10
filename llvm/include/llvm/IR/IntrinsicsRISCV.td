@@ -367,8 +367,9 @@ class INT_M_VVM : Intrinsic<[llvm_anyvector_ty],
                             [IntrNoMem]>;
 
 class INT_M_VXM : Intrinsic<[llvm_anyvector_ty],
-                            [llvm_anyvector_ty, llvm_any_ty, LLVMMatchType<0>],
-                            [IntrNoMem]>;
+                            [llvm_anyvector_ty, llvm_anyint_ty, LLVMMatchType<0>],
+                            [IntrNoMem]>,
+                  RVVIntrinsic { let ExtendOperand = 2; }
 
 multiclass INT_RISCV_V {
   def "int_riscv_" # NAME # "_v" : INT_V;
