@@ -70,6 +70,7 @@ void RISCVVectorMagicEmitter::run(raw_ostream &OS) {
   OS << "bool matchVectorMagic(const MCInst &Inst, unsigned &Rs2, unsigned &Rs1, unsigned &Rd) {\n";
   OS << "  switch (Inst.getOpcode()) {";
 
+  genLabel(OS, "RVInstSetiVLi"), genCase(OS, -1, -1, 0);
   genLabel(OS, "RVInstSetVLi"), genCase(OS, -1, 1, 0);
   genLabel(OS, "RVInstSetVL"), genCase(OS, 2, 1, 0);
   genLabel(OS, "RVInstVV"), genCase(OS, -1, -1, -1);
