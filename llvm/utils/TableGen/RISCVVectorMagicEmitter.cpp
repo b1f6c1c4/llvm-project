@@ -58,8 +58,11 @@ void RISCVVectorMagicEmitter::genCase(raw_ostream &OS, int Rs2, int Rs1, int Rd,
 }
 
 void RISCVVectorMagicEmitter::genLabel(raw_ostream &OS, const std::string &Class) {
-  for (auto *R : Records.getAllDerivedDefinitions(Class))
-    OS << "\n    case RISCV::" << R->getNameInitAsString() << ":";
+  for (auto *R : Records.getAllDerivedDefinitions(Class)) {
+    auto Name = R->getNameInitAsString();
+    if (Name == "VMV_V_X") continue;
+    OS << "\n    case RISCV::" << Name << ":";
+  }
 }
 
 void RISCVVectorMagicEmitter::run(raw_ostream &OS) {
@@ -75,6 +78,7 @@ void RISCVVectorMagicEmitter::run(raw_ostream &OS) {
   genLabel(OS, "RVInstSetVL"), genCase(OS, 2, 1, 0);
   genLabel(OS, "RVInstVV"), genCase(OS, -1, -1, -1);
   genLabel(OS, "RVInstVX"), genCase(OS, -1, 2, -1);
+  OS << "\n    case RISCV::VMV_V_X:";
   genLabel(OS, "RVInstV2"), genCase(OS, -1, 1, -1);
   genLabel(OS, "RVInstIVI"), genCase(OS, -1, -1, -1);
   genLabel(OS, "RVInstV"), genCase(OS, -1, -1, -1);
