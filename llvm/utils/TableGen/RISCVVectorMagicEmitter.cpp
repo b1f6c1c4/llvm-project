@@ -74,14 +74,14 @@ void RISCVVectorMagicEmitter::run(raw_ostream &OS) {
   OS << "bool matchVectorMagic(const MCInst &Inst, unsigned &Rs2, unsigned &Rs1, unsigned &Rd) {\n";
   OS << "  switch (Inst.getOpcode()) {";
 
-  OS << "\n    case RISCV::VMV_X_S:";
+  OS << "\n    case RISCV::VMV_X_S:"; genCase(OS, -1, -1, 0);
+  OS << "\n    case RISCV::VMV_V_X:"; genCase(OS, -1, 1, -1);
   genLabel(OS, "RVInstSetiVLi"), genCase(OS, -1, -1, 0);
   genLabel(OS, "RVInstSetVLi"), genCase(OS, -1, 1, 0);
   genLabel(OS, "RVInstSetVL"), genCase(OS, 2, 1, 0);
   genLabel(OS, "RVInstVV"), genCase(OS, -1, -1, -1);
   genLabel(OS, "RVInstVX"), genCase(OS, -1, 2, -1);
-  OS << "\n    case RISCV::VMV_V_X:";
-  genLabel(OS, "RVInstV2"), genCase(OS, -1, 1, -1);
+  genLabel(OS, "RVInstV2"), genCase(OS, -1, 2, -1);
   genLabel(OS, "RVInstIVI"), genCase(OS, -1, -1, -1);
   genLabel(OS, "RVInstV"), genCase(OS, -1, -1, -1);
   genLabel(OS, "RVInstVLU"), genCase(OS, -1, 1, -1);
