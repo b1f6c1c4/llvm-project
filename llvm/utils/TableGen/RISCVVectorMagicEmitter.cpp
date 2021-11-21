@@ -60,10 +60,21 @@ void RISCVVectorMagicEmitter::genCase(raw_ostream &OS, int Rs2, int Rs1, int Rd,
 void RISCVVectorMagicEmitter::genLabel(raw_ostream &OS, const std::string &Class) {
   for (auto *R : Records.getAllDerivedDefinitions(Class)) {
     auto Name = R->getNameInitAsString();
+
     if (Name == "VPOPC_M") continue;
     if (Name == "VFIRST_M") continue;
     if (Name == "VMV_X_S") continue;
+
+    if (Name == "VMACC_VX") continue;
+    if (Name == "VNMSAC_VX") continue;
+    if (Name == "VMADD_VX") continue;
+    if (Name == "VNMSUB_VX") continue;
+    if (Name == "VWMACCU_VX") continue;
+    if (Name == "VWMACC_VX") continue;
+    if (Name == "VWMACCSU_VX") continue;
+    if (Name == "VWMACCUS_VX") continue;
     if (Name == "VMV_V_X") continue;
+
     OS << "\n    case RISCV::" << Name << ":";
   }
 }
@@ -79,7 +90,17 @@ void RISCVVectorMagicEmitter::run(raw_ostream &OS) {
   OS << "\n    case RISCV::VPOPC_M:";
   OS << "\n    case RISCV::VFIRST_M:";
   OS << "\n    case RISCV::VMV_X_S:"; genCase(OS, -1, -1, 0);
+
+  OS << "\n    case RISCV::VMACC_VX:";
+  OS << "\n    case RISCV::VNMSAC_VX:";
+  OS << "\n    case RISCV::VMADD_VX:";
+  OS << "\n    case RISCV::VNMSUB_VX:";
+  OS << "\n    case RISCV::VWMACCU_VX:";
+  OS << "\n    case RISCV::VWMACC_VX:";
+  OS << "\n    case RISCV::VWMACCSU_VX:";
+  OS << "\n    case RISCV::VWMACCUS_VX:";
   OS << "\n    case RISCV::VMV_V_X:"; genCase(OS, -1, 1, -1);
+
   genLabel(OS, "RVInstSetiVLi"), genCase(OS, -1, -1, 0);
   genLabel(OS, "RVInstSetVLi"), genCase(OS, -1, 1, 0);
   genLabel(OS, "RVInstSetVL"), genCase(OS, 2, 1, 0);
