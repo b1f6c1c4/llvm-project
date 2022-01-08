@@ -114,7 +114,8 @@ static int convert_magic_byte(char c) {
 #include "RISCVGenVectorMagicEmitter.inc"
 void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
   unsigned Rs2, Rs1, Rd;
-  if (!MagicEmitter || !matchVectorMagic(Inst, Rs2, Rs1, Rd)) {
+  bool Fs1, Fdw;
+  if (!MagicEmitter || !matchVectorMagic(Inst, Rs2, Rs1, Fs1, Rd, Fdw)) {
     emitToStreamer(S, Inst);
     return;
   }
@@ -130,18 +131,36 @@ void RISCVAsmPrinter::EmitToStreamer(MCStreamer &S, const MCInst &Inst) {
                     .addReg(Rs2)
                     .addReg(RISCV::X0)
                     .addImm(convert_magic_byte(Str[0])));
-  emitToStreamer(S, MCInstBuilder(RISCV::SD)
-                    .addReg(Rs1)
-                    .addReg(RISCV::X0)
-                    .addImm(convert_magic_byte(Str[1])));
-  emitToStreamer(S, MCInstBuilder(RISCV::SD)
-                    .addReg(Rd)
-                    .addReg(RISCV::X0)
-                    .addImm(convert_magic_byte(Str[2])));
-  emitToStreamer(S, MCInstBuilder(RISCV::LD)
-                    .addReg(Rd)
-                    .addReg(RISCV::X0)
-                    .addImm(convert_magic_byte(Str[3])));
+  if (!Fs1) {
+    emitToStreamer(S, MCInstBuilder(RISCV::SD)
+                      .addReg(Rs1)
+                      .addReg(RISCV::X0)
+                      .addImm(convert_magic_byte(Str[1])));
+  } else {
+    emitToStreamer(S, MCInstBuilder(RISCV::FSD)
+                      .addReg(Rs1)
+                      .addReg(RISCV::X0)
+                      .addImm(convert_magic_byte(Str[1])));
+  }
+  if (!Fdw) {
+    emitToStreamer(S, MCInstBuilder(RISCV::SD)
+                      .addReg(Rd)
+                      .addReg(RISCV::X0)
+                      .addImm(convert_magic_byte(Str[2])));
+    emitToStreamer(S, MCInstBuilder(RISCV::LD)
+                      .addReg(Rd)
+                      .addReg(RISCV::X0)
+                      .addImm(convert_magic_byte(Str[3])));
+  } else {
+    emitToStreamer(S, MCInstBuilder(RISCV::SD)
+                      .addReg(RISCV::X0)
+                      .addReg(RISCV::X0)
+                      .addImm(convert_magic_byte(Str[2])));
+    emitToStreamer(S, MCInstBuilder(RISCV::FLD)
+                      .addReg(Rd)
+                      .addReg(RISCV::X0)
+                      .addImm(convert_magic_byte(Str[3])));
+  }
 }
 
 // Simple pseudo-instructions have their lowering (with expansion to real
