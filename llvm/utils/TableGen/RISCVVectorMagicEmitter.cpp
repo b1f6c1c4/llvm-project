@@ -62,7 +62,7 @@ void RISCVVectorMagicEmitter::genLabel(raw_ostream &OS, const std::string &Class
     auto Name = R->getNameInitAsString();
 
     if (Name == "VFMV_F_S") continue;
-    if (Name == "VPOPC_M") continue;
+    if (Name == "VCPOP_M") continue;
     if (Name == "VFIRST_M") continue;
     if (Name == "VMV_X_S") continue;
 
@@ -81,7 +81,7 @@ void RISCVVectorMagicEmitter::run(raw_ostream &OS) {
 
   OS << "\n    case RISCV::VFMV_F_S:";
   OS << "\n      Fdw = true;\n[[fallthrough]];";
-  OS << "\n    case RISCV::VPOPC_M:";
+  OS << "\n    case RISCV::VCPOP_M:";
   OS << "\n    case RISCV::VFIRST_M:";
   OS << "\n    case RISCV::VMV_X_S:"; genCase(OS, -1, -1, 0);
 
